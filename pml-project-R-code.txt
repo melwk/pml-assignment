@@ -1,0 +1,30 @@
+library(caret)
+# load dataset
+dataset <- read.csv("./pml-training.csv")
+# plot and analyze predictors
+names(dataset)
+summary(dataset)
+plot(dataset$roll_arm)
+qplot(roll_arm, roll_belt, colour = classe,data = dataset)
+# remove near-zero variables, non predictor variables, ….
+dataselect <- names(dataset[,-c(1:7,12:36,50:59,69:83,87:94,95:98,99:101,103:115,125:139,141:150)])
+adataset <- dataset[,dataselect]; names(adataset)
+# fit a random forest model (with cross-validation)
+tc <- trainControl(method="repeatedcv", number=10, repeats=10, classProbs = TRUE)
+set.seed(13568);  rfModFit <- train(classe ~ ., data= adataset, method="rf", trControl=tc, ntree=10)
+# analyze model accuracy
+rfModFit
+confusionMatrix(rfModFit)
+# OOB estimate
+rfModFit$finalModel
+# look at variable importance
+varImp(rfModFit)
+varImpPlot(rfModFit$finalModel)
+# in band accuracy
+confusionMatrix(adataset$classe, predict(rfModFit, newdata=adataset))
+# predict on new dataset
+testing <- read.csv("./pml-testing.csv")
+testselect <- dataselect[-50]
+atesting <- testing[,testselect]; names(atesting)
+atesting$problem_id <- testing$problem_id
+predict(rfModFit, newdata=atesting[,-50])
