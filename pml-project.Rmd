@@ -1,0 +1,203 @@
+
+# Course project report
+
+## Load dataset
+
+```{r}
+library(caret)
+dataset <- read.csv("./pml-training.csv")
+```
+
+## Plot and analyze predictors
+
+```{r}
+names(dataset)
+summary(dataset)
+plot(dataset$roll_arm)
+qplot(roll_arm, roll_belt, colour = classe,data = dataset)
+```
+
+### Remove near-zero variables, non predictor variables, ….
+
+```{r}
+dataselect <- names(dataset[,-c(1:7,12:36,50:59,69:83,87:94,95:98,99:101,103:115,125:139,141:150)])
+adataset <- dataset[,dataselect]; names(adataset)
+```
+
+Below are selected predictors:
+
+[1] "roll_belt"            "pitch_belt"           "yaw_belt"            
+ [4] "total_accel_belt"     "gyros_belt_x"         "gyros_belt_y"        
+ [7] "gyros_belt_z"         "accel_belt_x"         "accel_belt_y"        
+[10] "accel_belt_z"         "magnet_belt_x"        "magnet_belt_y"       
+[13] "magnet_belt_z"        "roll_arm"             "pitch_arm"           
+[16] "yaw_arm"              "total_accel_arm"      "gyros_arm_x"         
+[19] "gyros_arm_y"          "gyros_arm_z"          "accel_arm_x"         
+[22] "accel_arm_y"          "accel_arm_z"          "magnet_arm_x"        
+[25] "magnet_arm_y"         "magnet_arm_z"         "roll_dumbbell"       
+[28] "pitch_dumbbell"       "yaw_dumbbell"         "total_accel_dumbbell"
+[31] "accel_dumbbell_x"     "accel_dumbbell_y"     "accel_dumbbell_z"    
+[34] "magnet_dumbbell_x"    "magnet_dumbbell_y"    "magnet_dumbbell_z"   
+[37] "roll_forearm"         "pitch_forearm"        "yaw_forearm"         
+[40] "total_accel_forearm"  "gyros_forearm_x"      "gyros_forearm_y"     
+[43] "gyros_forearm_z"      "accel_forearm_x"      "accel_forearm_y"     
+[46] "accel_forearm_z"      "magnet_forearm_x"     "magnet_forearm_y"    
+[49] "magnet_forearm_z"     "classe"              
+
+
+## Fit a random forest model with cross-validation
+
+```{r}
+tc <- trainControl(method="repeatedcv", number=10, repeats=10, classProbs = TRUE)
+set.seed(13568);  rfModFit <- train(classe ~ ., data= adataset, method="rf", trControl=tc, ntree=10)
+```
+
+
+## Analyze model accuracy
+
+```{r}
+rfModFit
+confusionMatrix(rfModFit)
+```
+
+Random Forest 
+
+19622 samples
+   49 predictors
+    5 classes: 'A', 'B', 'C', 'D', 'E' 
+
+No pre-processing
+Resampling: Cross-Validated (10 fold, repeated 10 times) 
+
+Summary of sample sizes: 17660, 17659, 17661, 17660, 17660, 17659, ... 
+
+Resampling results across tuning parameters:
+
+  mtry  Accuracy  Kappa  Accuracy SD  Kappa SD
+  2     0.985     0.981  0.00291      0.00369 
+  25    0.991     0.989  0.00234      0.00296 
+  49    0.985     0.981  0.00337      0.00426 
+
+Accuracy was used to select the optimal model using  the largest value.
+The final value used for the model was mtry = 25. 
+
+Cross-Validated (10 fold, repeated 10 times) Confusion Matrix 
+
+(entries are percentages of table totals)
+
+          Reference
+Prediction    A    B    C    D    E
+         A 28.4  0.2  0.0  0.0  0.0
+         B  0.0 19.1  0.1  0.0  0.0
+         C  0.0  0.1 17.2  0.2  0.0
+         D  0.0  0.0  0.1 16.1  0.1
+         E  0.0  0.0  0.0  0.0 18.3
+
+
+### OOB estimate
+
+```{r}
+rfModFit$finalModel
+```
+
+Call:
+randomForest(x = x, y = y, ntree = 10, mtry = param$mtry) 
+               Type of random forest: classification
+                     Number of trees: 10
+No. of variables tried at each split: 25
+
+        OOB estimate of  error rate: 2.59%
+Confusion matrix:
+     A    B    C    D    E class.error
+A 5488   18    8    5    6 0.006696833
+B   77 3622   40   11   15 0.037981408
+C    6   66 3278   38    4 0.033608491
+D   12   17   73 3071   12 0.035792779
+E    4   38   24   29 3482 0.026558569
+
+
+### Look at variable importance
+
+```{r}
+varImp(rfModFit)
+varImpPlot(rfModFit$finalModel)
+```
+
+rf variable importance
+
+  only 20 most important variables shown (out of 49)
+
+                     Overall
+roll_belt             100.00
+pitch_forearm          62.99
+pitch_belt             56.50
+yaw_belt               54.89
+magnet_dumbbell_y      47.80
+magnet_dumbbell_z      44.39
+roll_forearm           38.69
+accel_dumbbell_y       26.47
+magnet_dumbbell_x      20.49
+accel_forearm_x        18.81
+magnet_forearm_z       18.70
+accel_belt_z           18.19
+roll_dumbbell          16.61
+magnet_belt_z          15.03
+accel_dumbbell_z       13.56
+total_accel_dumbbell   13.51
+gyros_belt_z           13.49
+roll_arm               12.67
+yaw_arm                12.41
+magnet_arm_x           11.05
+
+
+### Compute in band accuracy
+
+```{r}
+confusionMatrix(adataset$classe, predict(rfModFit, newdata=adataset))
+```
+
+Confusion Matrix and Statistics
+
+          Reference
+Prediction    A    B    C    D    E
+         A 5580    0    0    0    0
+         B    2 3794    1    0    0
+         C    0    0 3422    0    0
+         D    0    0    0 3216    0
+         E    0    0    0    0 3607
+
+Overall Statistics
+                                     
+               Accuracy : 0.9998     
+                 95% CI : (0.9996, 1)
+    No Information Rate : 0.2845     
+    P-Value [Acc > NIR] : < 2.2e-16  
+                                     
+                  Kappa : 0.9998     
+ Mcnemar's Test P-Value : NA         
+
+Statistics by Class:
+
+                     Class: A Class: B Class: C Class: D Class: E
+Sensitivity            0.9996   1.0000   0.9997   1.0000   1.0000
+Specificity            1.0000   0.9998   1.0000   1.0000   1.0000
+Pos Pred Value         1.0000   0.9992   1.0000   1.0000   1.0000
+Neg Pred Value         0.9999   1.0000   0.9999   1.0000   1.0000
+Prevalence             0.2845   0.1934   0.1744   0.1639   0.1838
+Detection Rate         0.2844   0.1934   0.1744   0.1639   0.1838
+Detection Prevalence   0.2844   0.1935   0.1744   0.1639   0.1838
+Balanced Accuracy      0.9998   0.9999   0.9999   1.0000   1.0000
+
+
+## Predict on new dataset
+
+```{r}
+testing <- read.csv("./pml-testing.csv")
+testselect <- dataselect[-50]
+atesting <- testing[,testselect]; names(atesting)
+atesting$problem_id <- testing$problem_id
+predict(rfModFit, newdata=atesting[,-50])
+```
+
+[1] B A B A A E D B A A B C B A E E A B B B
+Levels: A B C D E

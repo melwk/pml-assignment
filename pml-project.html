@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="PML assignment : ">
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>PML assignment</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a href="https://melwk.github.io/pml-assignment">View on github.io</a>
+
+          <h1 id="project_title">PML assignment </h1>
+ 
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1>
+<a name="course-project-report" class="anchor" href="#course-project-report"><span class="octicon octicon-link"></span></a>Course project report</h1>
+
+<h2>
+<a name="load-dataset" class="anchor" href="#load-dataset"><span class="octicon octicon-link"></span></a>Load dataset</h2>
+
+<div class="highlight highlight-r"><pre><span class="kn">library</span><span class="p">(</span>caret<span class="p">)</span>
+dataset <span class="o">&lt;-</span> read.csv<span class="p">(</span><span class="s">"./pml-training.csv"</span><span class="p">)</span>
+</pre></div>
+
+<h2>
+<a name="plot-and-analyze-predictors" class="anchor" href="#plot-and-analyze-predictors"><span class="octicon octicon-link"></span></a>Plot and analyze predictors</h2>
+
+<div class="highlight highlight-r"><pre><span class="kp">names</span><span class="p">(</span>dataset<span class="p">)</span>
+<span class="kp">summary</span><span class="p">(</span>dataset<span class="p">)</span>
+plot<span class="p">(</span>dataset<span class="o">$</span>roll_arm<span class="p">)</span>
+qplot<span class="p">(</span>roll_arm<span class="p">,</span> roll_belt<span class="p">,</span> colour <span class="o">=</span> classe<span class="p">,</span>data <span class="o">=</span> dataset<span class="p">)</span>
+</pre></div>
+
+<h3>
+<a name="remove-near-zero-variables-non-predictor-variables-" class="anchor" href="#remove-near-zero-variables-non-predictor-variables-"><span class="octicon octicon-link"></span></a>Remove near-zero variables, non predictor variables, ….</h3>
+
+<div class="highlight highlight-r"><pre>dataselect <span class="o">&lt;-</span> <span class="kp">names</span><span class="p">(</span>dataset<span class="p">[,</span><span class="o">-</span><span class="kt">c</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="m">7</span><span class="p">,</span><span class="m">12</span><span class="o">:</span><span class="m">36</span><span class="p">,</span><span class="m">50</span><span class="o">:</span><span class="m">59</span><span class="p">,</span><span class="m">69</span><span class="o">:</span><span class="m">83</span><span class="p">,</span><span class="m">87</span><span class="o">:</span><span class="m">94</span><span class="p">,</span><span class="m">95</span><span class="o">:</span><span class="m">98</span><span class="p">,</span><span class="m">99</span><span class="o">:</span><span class="m">101</span><span class="p">,</span><span class="m">103</span><span class="o">:</span><span class="m">115</span><span class="p">,</span><span class="m">125</span><span class="o">:</span><span class="m">139</span><span class="p">,</span><span class="m">141</span><span class="o">:</span><span class="m">150</span><span class="p">)])</span>
+adataset <span class="o">&lt;-</span> dataset<span class="p">[,</span>dataselect<span class="p">];</span> <span class="kp">names</span><span class="p">(</span>adataset<span class="p">)</span>
+</pre></div>
+
+<p>Below are selected predictors:</p>
+
+<p>[1] "roll_belt"            "pitch_belt"           "yaw_belt"<br>
+[4] "total_accel_belt"     "gyros_belt_x"         "gyros_belt_y"<br>
+[7] "gyros_belt_z"         "accel_belt_x"         "accel_belt_y"<br>
+[10] "accel_belt_z"         "magnet_belt_x"        "magnet_belt_y"<br>
+[13] "magnet_belt_z"        "roll_arm"             "pitch_arm"<br>
+[16] "yaw_arm"              "total_accel_arm"      "gyros_arm_x"<br>
+[19] "gyros_arm_y"          "gyros_arm_z"          "accel_arm_x"<br>
+[22] "accel_arm_y"          "accel_arm_z"          "magnet_arm_x"<br>
+[25] "magnet_arm_y"         "magnet_arm_z"         "roll_dumbbell"<br>
+[28] "pitch_dumbbell"       "yaw_dumbbell"         "total_accel_dumbbell" <br>
+[31] "accel_dumbbell_x"     "accel_dumbbell_y"     "accel_dumbbell_z"<br>
+[34] "magnet_dumbbell_x"    "magnet_dumbbell_y"    "magnet_dumbbell_z"<br>
+[37] "roll_forearm"         "pitch_forearm"        "yaw_forearm"<br>
+[40] "total_accel_forearm"  "gyros_forearm_x"      "gyros_forearm_y"<br>
+[43] "gyros_forearm_z"      "accel_forearm_x"      "accel_forearm_y"<br>
+[46] "accel_forearm_z"      "magnet_forearm_x"     "magnet_forearm_y"<br>
+[49] "magnet_forearm_z"     "classe"              </p>
+
+<h2>
+<a name="fit-a-random-forest-model-with-cross-validation" class="anchor" href="#fit-a-random-forest-model-with-cross-validation"><span class="octicon octicon-link"></span></a>Fit a random forest model with cross-validation</h2>
+
+<div class="highlight highlight-r"><pre>tc <span class="o">&lt;-</span> trainControl<span class="p">(</span>method<span class="o">=</span><span class="s">"repeatedcv"</span><span class="p">,</span> number<span class="o">=</span><span class="m">10</span><span class="p">,</span> repeats<span class="o">=</span><span class="m">10</span><span class="p">,</span> classProbs <span class="o">=</span> <span class="kc">TRUE</span><span class="p">)</span>
+<span class="kp">set.seed</span><span class="p">(</span><span class="m">13568</span><span class="p">);</span>  rfModFit <span class="o">&lt;-</span> train<span class="p">(</span>classe <span class="o">~</span> <span class="m">.</span><span class="p">,</span> data<span class="o">=</span> adataset<span class="p">,</span> method<span class="o">=</span><span class="s">"rf"</span><span class="p">,</span> trControl<span class="o">=</span>tc<span class="p">,</span> ntree<span class="o">=</span><span class="m">10</span><span class="p">)</span>
+</pre></div>
+
+<h2>
+<a name="analyze-model-accuracy" class="anchor" href="#analyze-model-accuracy"><span class="octicon octicon-link"></span></a>Analyze model accuracy</h2>
+
+<div class="highlight highlight-r"><pre>rfModFit
+confusionMatrix<span class="p">(</span>rfModFit<span class="p">)</span>
+</pre></div>
+
+<p>Random Forest </p>
+
+<p>19622 samples
+   49 predictors
+    5 classes: 'A', 'B', 'C', 'D', 'E' </p>
+
+<p>No pre-processing
+Resampling: Cross-Validated (10 fold, repeated 10 times) </p>
+
+<p>Summary of sample sizes: 17660, 17659, 17661, 17660, 17660, 17659, ... </p>
+
+<p>Resampling results across tuning parameters:</p>
+
+<p>mtry  <strong>Accuracy</strong>  Kappa  Accuracy SD  Kappa SD<br>
+  2     0.985     0.981  0.00291      0.00369 <br>
+  25    <strong>0.991</strong>     0.989  0.00234      0.00296 <br>
+  49    0.985     0.981  0.00337      0.00426 </p>
+
+<p>Accuracy was used to select the optimal model using  the largest value.
+The final value used for the model was mtry = 25. </p>
+
+<p>Cross-Validated (10 fold, repeated 10 times) Confusion Matrix </p>
+
+<p>(entries are percentages of table totals)</p>
+
+<pre><code>      Reference
+</code></pre>
+
+<p>Prediction    A    B    C    D    E<br>
+         A 28.4  0.2  0.0  0.0  0.0<br>
+         B  0.0 19.1  0.1  0.0  0.0<br>
+         C  0.0  0.1 17.2  0.2  0.0<br>
+         D  0.0  0.0  0.1 16.1  0.1<br>
+         E  0.0  0.0  0.0  0.0 18.3</p>
+
+<h3>
+<a name="oob-estimate" class="anchor" href="#oob-estimate"><span class="octicon octicon-link"></span></a>OOB estimate : 2.59%</h3>
+
+<div class="highlight highlight-r"><pre>rfModFit<span class="o">$</span>finalModel
+</pre></div>
+
+<p>Call:
+randomForest(x = x, y = y, ntree = 10, mtry = param$mtry) <br>
+               Type of random forest: classification<br>
+                     Number of trees: 10<br>
+No. of variables tried at each split: 25</p>
+
+<pre><strong>OOB estimate of error rate: 2.59%</strong></pre>
+
+<p>Confusion matrix:
+     A    B    C    D    E class.error<br>
+A 5488   18    8    5    6 0.006696833<br>
+B   77 3622   40   11   15 0.037981408<br>
+C    6   66 3278   38    4 0.033608491<br>
+D   12   17   73 3071   12 0.035792779<br>
+E    4   38   24   29 3482 0.026558569</p>
+
+<h3>
+<a name="look-at-variable-importance" class="anchor" href="#look-at-variable-importance"><span class="octicon octicon-link"></span></a>Look at variable importance</h3>
+
+<div class="highlight highlight-r"><pre>varImp<span class="p">(</span>rfModFit<span class="p">)</span>
+varImpPlot<span class="p">(</span>rfModFit<span class="o">$</span>finalModel<span class="p">)</span>
+</pre></div>
+
+<p>rf variable importance</p>
+
+<p>only 20 most important variables shown (out of 49)</p>
+
+<pre><code>                 Overall
+</code></pre>
+
+<p>roll_belt             100.00<br>
+pitch_forearm          62.99<br>
+pitch_belt             56.50<br>
+yaw_belt               54.89<br>
+magnet_dumbbell_y      47.80<br>
+magnet_dumbbell_z      44.39<br>
+roll_forearm           38.69<br>
+accel_dumbbell_y       26.47<br>
+magnet_dumbbell_x      20.49<br>
+accel_forearm_x        18.81<br>
+magnet_forearm_z       18.70<br>
+accel_belt_z           18.19<br>
+roll_dumbbell          16.61<br>
+magnet_belt_z          15.03<br>
+accel_dumbbell_z       13.56<br>
+total_accel_dumbbell   13.51<br>
+gyros_belt_z           13.49<br>
+roll_arm               12.67<br>
+yaw_arm                12.41<br>
+magnet_arm_x           11.05</p>
+
+<h3>
+<a name="compute-in-band-accuracy" class="anchor" href="#compute-in-band-accuracy"><span class="octicon octicon-link"></span></a>Compute in band accuracy</h3>
+
+<div class="highlight highlight-r"><pre>confusionMatrix<span class="p">(</span>adataset<span class="o">$</span>classe<span class="p">,</span> predict<span class="p">(</span>rfModFit<span class="p">,</span> newdata<span class="o">=</span>adataset<span class="p">))</span>
+</pre></div>
+
+<p>Confusion Matrix and Statistics</p>
+
+<pre><code>      Reference
+</code></pre>
+
+<p>Prediction    A    B    C    D    E<br>
+         A 5580    0    0    0    0<br>
+         B    2 3794    1    0    0<br>
+         C    0    0 3422    0    0<br>
+         D    0    0    0 3216    0<br>
+         E    0    0    0    0 3607</p>
+
+<p>Overall Statistics</p>
+
+<pre>           Accuracy : 0.9998     <br>
+             95% CI : (0.9996, 1)<br>
+No Information Rate : 0.2845     <br>
+P-Value [Acc &gt; NIR] : &lt; 2.2e-16<br>  
+<br>
+              Kappa : 0.9998     <br>
+</pre>
+
+<p>Mcnemar's Test P-Value : NA         </p>
+
+<p>Statistics by Class:</p>
+
+<pre>                Class: A Class: B Class: C Class: D Class: E
+</pre>
+
+<p>Sensitivity            0.9996   1.0000   0.9997   1.0000   1.0000<br>
+Specificity            1.0000   0.9998   1.0000   1.0000   1.0000<br>
+Pos Pred Value         1.0000   0.9992   1.0000   1.0000   1.0000<br>
+Neg Pred Value         0.9999   1.0000   0.9999   1.0000   1.0000<br>
+Prevalence             0.2845   0.1934   0.1744   0.1639   0.1838<br>
+Detection Rate         0.2844   0.1934   0.1744   0.1639   0.1838<br>
+Detection Prevalence   0.2844   0.1935   0.1744   0.1639   0.1838<br>
+Balanced Accuracy      0.9998   0.9999   0.9999   1.0000   1.0000</p>
+
+<h2>
+<a name="predict-on-new-dataset" class="anchor" href="#predict-on-new-dataset"><span class="octicon octicon-link"></span></a>Predict on new dataset</h2>
+
+<div class="highlight highlight-r"><pre>testing <span class="o">&lt;-</span> read.csv<span class="p">(</span><span class="s">"./pml-testing.csv"</span><span class="p">)</span>
+testselect <span class="o">&lt;-</span> dataselect<span class="p">[</span><span class="m">-50</span><span class="p">]</span>
+atesting <span class="o">&lt;-</span> testing<span class="p">[,</span>testselect<span class="p">];</span> <span class="kp">names</span><span class="p">(</span>atesting<span class="p">)</span>
+atesting<span class="o">$</span>problem_id <span class="o">&lt;-</span> testing<span class="o">$</span>problem_id
+predict<span class="p">(</span>rfModFit<span class="p">,</span> newdata<span class="o">=</span>atesting<span class="p">[,</span><span class="m">-50</span><span class="p">])</span>
+</pre></div>
+
+<p>[1] B A B A A E D B A A B C B A E E A B B B<br>
+Levels: A B C D E</p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
